@@ -1,4 +1,2 @@
-# Campus-Lost-and-Found-Portal
+# LostNoMore
 Intro to SE Project
-<br>
-Mohsin Khan
