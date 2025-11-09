@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LostNoMore — Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%231e40af'/%3E%3Ctext x='50' y='65' font-size='52' text-anchor='middle' fill='white' font-family='Inter, Arial' font-weight='700'%3EL%3C/text%3E%3C/svg%3E" />
+</head>
+
+<body class="app-root">
+
+  <header class="topbar" id="topbar" aria-hidden="true">
+    <div class="container topbar-inner">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <h1>LostNoMore</h1>
+      </div>
+      <nav class="nav">
+        <button id="nav-all-items" class="nav-btn">All Items</button>
+        <button id="nav-my-reports" class="nav-btn">My Reports</button>
+        <button id="nav-report-item" class="nav-btn primary">Report Item</button>
+        <button id="nav-profile" class="nav-btn nav-profile-btn" title="View Profile"></button>
+        <button id="nav-logout" class="nav-btn danger">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <div id="message-bar" class="message hidden" role="status" aria-live="polite"></div>
+
+  <main class="container main" id="main">
+
+    <section id="view-login" class="view card auth-card">
+      <div class="auth-header">
+        <h2 class="title">Welcome back</h2>
+        <p class="muted">Sign in to access the LostNoMore portal</p>
+      </div>
+      <form id="login-form" class="form">
+        <label class="label">
+          Email
+          <input id="login-email" name="email" type="email" required class="input" placeholder="you@university.edu">
+        </label>
+        <label class="label">
+          Password
+          <input id="login-password" name="password" type="password" required class="input" placeholder="Your password">
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+      </form>
+      <p class="small text-center">Don't have an account? <a id="link-to-register" href="#" class="link">Create one</a>
+      </p>
+    </section>
+
+    <section id="view-register" class="view card auth-card hidden">
+      <div class="auth-header">
+        <h2 class="title">Create account</h2>
+        <p class="muted">Use your university email to register</p>
+      </div>
+      <form id="register-form" class="form">
+        <label class="label">
+          Full name
+          <input id="register-name" name="name" type="text" required class="input" placeholder="Jane Doe">
+        </label>
+        <label class="label">
+          University email
+          <input id="register-email" name="email" type="email" required class="input" placeholder="you@nu.edu.pk">
+        </label>
+        <label class="label">
+          Phone Number
+          <input id="register-phone" name="phone" type="tel" required class="input" placeholder="+923001234567"
+            pattern="^\+[1-9]\d{7,14}$" />
+        </label>
+        <label class="label">
+          Password
+          <input id="register-password" name="password" type="password" required class="input"
+            placeholder="Create a secure password">
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Register</button>
+      </form>
+      <p class="small text-center">Already registered? <a id="link-to-login" href="#" class="link">Sign in</a></p>
+    </section>
+
+    <section id="view-dashboard" class="view hidden">
+      <div class="panel-header">
+        <h2>All Reported Items</h2>
+        <div class="header-actions">
+          <button id="refresh-items" class="btn btn-secondary">Refresh</button>
+          <button id="btn-new-report" class="btn primary">Report Item</button>
+        </div>
+      </div>
+      <div id="dashboard-items-container" class="grid cards-grid"></div>
+    </section>
+
+    <section id="view-my-reports" class="view hidden">
+      <div class="panel-header">
+        <h2>My Reports</h2>
+        <div class="tab-group" id="my-reports-filter-tabs">
+          <button class="tab-btn active" data-filter="all">All</button>
+          <button class="tab-btn" data-filter="lost">Lost</button>
+          <button class="tab-btn" data-filter="found">Found</button>
+        </div>
+      </div>
+      <div id="my-reports-items-container" class="grid cards-grid"></div>
+    </section>
+
+    <section id="view-report-type" class="view card report-type-view hidden">
+      <div class="auth-header">
+        <h2 class="title">Report Type</h2>
+        <p class="muted">Are you reporting a lost item or reporting that you found an item?</p>
+      </div>
+      <div class="report-type-grid">
+        <label class="type-card">
+          <input type="radio" name="reportType" value="lost" checked class="sr-only" />
+          <div class="type-card-inner">
+            <div class="type-emoji">🔍</div>
+            <h3>I Lost Something</h3>
+            <p class="muted small">You're looking for your item.</p>
+          </div>
+        </label>
+        <label class="type-card">
+          <input type="radio" name="reportType" value="found" class="sr-only" />
+          <div class="type-card-inner">
+            <div class="type-emoji">📦</div>
+            <h3>I Found Something</h3>
+            <p class="muted small">You want to report an item you found.</p>
+          </div>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button id="report-type-cancel" class="btn btn-secondary">Cancel</button>
+      </div>
+    </section>
+
+    <section id="view-report-details" class="view card hidden">
+      <div class="auth-header">
+        <h2 class="title" style="text-align: center;">Item Details</h2>
+      </div>
+      <form id="report-form" class="form" enctype="multipart/form-data">
+        <fieldset class="fieldset">
+          <label class="label">
+            Item Name
+            <input id="report-title" name="title" type="text" required class="input"
+              placeholder="Black wallet, Blue water bottle...">
+          </label>
+          <label class="label">
+            Description
+            <textarea id="report-description" name="description" rows="3" required class="input"
+              placeholder="Describe marks, contents, brand, where it was last seen..."></textarea>
+          </label>
+          <label class="label">
+            Category
+            <select id="report-category" name="category" required class="input">
+              <option value="">Select a category...</option>
+              <option>Electronics</option>
+              <option>Apparel</option>
+              <option>Keys/Cards</option>
+              <option>Books/Notes</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label class="label">
+            Last Known Location
+            <input id="report-location" name="location" type="text" required class="input"
+              placeholder="Library, Cafe, Hill Side...">
+          </label>
+          <label class="label">
+            Upload Image (optional)
+            <input id="report-image" name="itemImage" type="file" accept="image/*" class="input-file">
+          </label>
+        </fieldset>
+        <div class="form-actions">
+          <button id="report-back" type="button" class="btn btn-secondary">Back</button>
+          <button type="submit" class="btn btn-primary">Submit Report</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="view-item-details" class="view hidden">
+      <div class="panel-header">
+        <button id="back-to-dashboard" class="btn btn-secondary">← Back</button>
+      </div>
+      <article class="detail-panel card">
+        <div class="detail-media">
+          <img id="details-image" src="" alt="Item image" />
+        </div>
+        <div class="detail-body">
+          <span id="details-type" class="badge"></span>
+          <h2 id="details-title" class="detail-title"></h2>
+          <p id="details-description" class="muted"></p>
+          <dl class="detail-list">
+            <div>
+              <dt>Category:</dt>
+              <dd id="details-category"></dd>
+            </div>
+            <div>
+              <dt>Location:</dt>
+              <dd id="details-location"></dd>
+            </div>
+            <div>
+              <dt>Reported By:</dt>
+              <dd id="details-reporter-name"></dd>
+            </div>
+
+            <div>
+              <dt>Contact Email:</dt>
+              <dd id="details-reporter-email"></dd>
+            </div>
+
+            <div>
+              <dt>Contact Mobile:</dt>
+              <dd id="details-reporter-mobile"></dd>
+            </div>
+
+            <div>
+              <dt>Reported On:</dt>
+              <dd id="details-date"></dd>
+            </div>
+          </dl>
+        </div>
+      </article>
+    </section>
+
+    <!-- NEW: Profile View Section -->
+    <section id="view-profile" class="view hidden">
+      <div class="panel-header">
+        <button id="profile-back" class="btn btn-secondary">← Back</button>
+      </div>
+      <div class="profile-container card">
+        <div class="profile-header">
+          <div class="profile-avatar-wrapper">
+            <img id="profile-avatar" class="profile-avatar" src="" alt="Profile Picture" />
+            <label for="profile-picture-input" class="profile-avatar-upload">
+              <span>📷</span>
+              <input id="profile-picture-input" name="profilePicture" type="file" accept="image/*" class="sr-only" />
+            </label>
+          </div>
+          <div class="profile-info">
+            <h2 id="profile-name" class="profile-name"></h2>
+            <p id="profile-email" class="profile-email muted"></p>
+          </div>
+        </div>
+
+        <form id="profile-form" class="form" enctype="multipart/form-data">
+          <fieldset class="fieldset">
+            <legend class="legend">Update Profile</legend>
+            <label class="label">
+              Phone Number
+              <input id="profile-phone-input" name="phone" type="tel" required class="input" placeholder="+923001234567"
+                pattern="^\+[1-9]\d{7,14}$" />
+            </label>
+            <p class="muted small" style="margin-top: -6px;">Current: <span id="profile-phone-display"></span></p>
+          </fieldset>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="loading-spinner" class="loading-overlay hidden" aria-hidden="true" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+
+</html>

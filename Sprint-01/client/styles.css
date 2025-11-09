@@ -1,0 +1,688 @@
+/* General */
+:root {
+    --bg: #0f172a;
+    --panel: #0f172a00;
+    --accent: #2563eb;
+    --muted: #6b7280;
+    --card: #ffffff;
+    --soft: #f1f5f9;
+    --danger: #dc2626;
+    --radius: 12px;
+    --glass: rgba(255, 255, 255, 0.03);
+    --glass-2: rgba(255, 255, 255, 0.04);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+* {
+    box-sizing: border-box
+}
+
+html,
+body {
+    height: 100%
+}
+
+body.app-root {
+    margin: 0;
+    /* NEW: Softer, more "gorgeous" background gradient */
+    background: linear-gradient(170deg, #f0f4ff 0%, #e6e9ff 40%, #dbe7ff 100%);
+    color: #0f172a;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* layout */
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* topbar */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(90deg, #fff, #f8fafc);
+    box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+    z-index: 40;
+}
+
+.topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.brand {
+    display: flex;
+    gap: 12px;
+    align-items: center
+}
+
+.brand h1 {
+    font-size: 1.15rem;
+    margin: 0;
+    color: #1e3a8a
+}
+
+.brand-mark {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 8px;
+    display: inline-block
+}
+
+/* hide nav when logged out (JS will toggle) */
+.nav {
+    display: flex;
+    gap: 8px;
+    align-items: center
+}
+
+.nav-btn {
+    background: transparent;
+    border: 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #334155
+}
+
+.nav-btn:hover {
+    background: var(--glass-2)
+}
+
+.nav-btn.primary {
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    color: white;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.18)
+}
+
+.nav-btn.danger {
+    color: var(--danger)
+}
+
+/* ======================================================
+   NEW: Profile button styling (circular with avatar)
+   ====================================================== */
+.nav-profile-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    transition: all 0.2s ease;
+}
+
+.nav-profile-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+}
+
+/* spacing to account for fixed topbar */
+.main {
+    padding-top: 100px;
+    padding-bottom: 60px
+}
+
+/* Cards */
+.card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+
+/* auth cards */
+.auth-card {
+    max-width: 520px;
+    margin: 28px auto
+}
+
+.title {
+    font-size: 1.4rem;
+    margin: 0 0 6px 0;
+    color: #0f172a
+}
+
+.muted {
+    color: var(--muted);
+    margin: 0 0 14px 0
+}
+
+.small {
+    font-size: 0.85rem
+}
+
+.link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600
+}
+
+.link:hover {
+    text-decoration: underline
+}
+
+/* form */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px
+}
+
+.label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #0f172a
+}
+
+.input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e6eef8;
+    background: #fff;
+    font-size: 0.95rem;
+    margin-top: 6px;
+}
+
+.input:focus {
+    outline: none;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.12);
+    border-color: #93c5fd
+}
+
+.input-file {
+    padding: 8px 6px
+}
+
+/* buttons */
+.btn {
+    display: inline-block;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 0;
+    background: #eef2ff;
+    color: #0f172a;
+    cursor: pointer;
+    font-weight: 600
+}
+
+.btn:hover {
+    filter: brightness(.98)
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, #2563eb, #7c3aed);
+    color: white;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.18)
+}
+
+.btn-secondary {
+    background: #e0e7ff;
+    color: #1e3a8a;
+}
+
+.btn-block {
+    width: 100%
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 12px
+}
+
+.form-actions .btn:first-child {
+    min-width: 120px
+}
+
+/* grids */
+.grid {
+    display: grid
+}
+
+.cards-grid {
+    /* Default to 1 column for small screens */
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 18px;
+}
+
+/* Use 2 columns on medium screens (tablets) */
+@media (min-width: 600px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Use 4 columns on large screens (desktops) - as you requested */
+@media (min-width: 900px) {
+    .cards-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* item card */
+.item-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #fff, #fbfdff);
+    transition: transform .18s ease, box-shadow .18s ease;
+    border: 1px solid rgba(15, 23, 42, 0.03);
+}
+
+.item-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 48px rgba(2, 6, 23, 0.08)
+}
+
+.item-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    display: block
+}
+
+.item-card .card-body {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px
+}
+
+.type-lost {
+    background: #fee2e2;
+    color: #b91c1c
+}
+
+.type-found {
+    background: #dcfce7;
+    color: #16a34a
+}
+
+/* report type grid */
+.report-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 18px 0
+}
+
+/* NEW: Updated type-card styles */
+.type-card {
+    cursor: pointer;
+    border-radius: 12px;
+    border: 1px solid #eff6ff;
+    background: linear-gradient(180deg, #fff, #fbfdff);
+    transition: all 0.25s ease;
+    /* Smooth transition for hover */
+}
+
+.type-card-inner {
+    padding: 24px;
+    /* More padding */
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* More gap */
+    align-items: center;
+    /* Centered content */
+    text-align: center;
+}
+
+.type-emoji {
+    font-size: 40px;
+    /* Bigger emoji */
+    margin-bottom: 8px;
+}
+
+/* NEW: Style for the H3 in the type card */
+.type-card-inner h3 {
+    font-size: 1.25rem;
+    color: #1e3a8a;
+    /* Dark blue, matches brand */
+    margin: 0;
+}
+
+/* NEW: "Gorgeous" hover effect */
+.type-card:hover {
+    transform: translateY(-8px);
+    /* Lifts up more */
+    box-shadow: 0 20px 40px rgba(37, 99, 235, 0.1);
+    /* Bluer, softer shadow */
+    border-color: var(--accent);
+}
+
+/* NEW: Style for the card when its radio is checked (using modern CSS) */
+.type-card:has(input[type="radio"]:checked) {
+    border-color: var(--accent);
+    box-shadow: 0 8px 30px rgba(37, 99, 235, 0.15);
+    transform: translateY(-4px);
+}
+
+
+/* fieldset/legend */
+.fieldset {
+    border: 0;
+    margin: 6px 0;
+    padding: 0
+}
+
+.legend {
+    font-weight: 700;
+    margin-bottom: 8px
+}
+
+/* details */
+.detail-panel {
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+    padding: 20px
+}
+
+.detail-media img {
+    width: 320px;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px
+}
+
+.detail-title {
+    margin: 6px 0 0 0
+}
+
+.detail-list {
+    margin-top: 12px
+}
+
+.detail-list dt {
+    font-weight: 700;
+    display: inline-block;
+    width: 110px;
+    color: #0f172a
+}
+
+.detail-list dd {
+    margin: 0 0 8px 0;
+    color: var(--muted);
+    display: inline-block
+}
+
+/* ======================================================
+   NEW: Profile Section Styles
+   ====================================================== */
+.profile-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-header {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e6eef8;
+}
+
+.profile-avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border: 3px solid #e6eef8;
+}
+
+.profile-avatar-upload {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 16px;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    transition: all 0.2s ease;
+}
+
+.profile-avatar-upload:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-name {
+    margin: 0 0 8px 0;
+    font-size: 1.3rem;
+    color: #0f172a;
+}
+
+.profile-email {
+    margin: 0;
+    color: var(--muted);
+}
+
+/* ====================================================== */
+
+/* loading */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 23, 0.45);
+    z-index: 9999;
+}
+
+.spinner {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 6px solid rgba(255, 255, 255, 0.12);
+    border-top-color: white;
+    animation: spin .9s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+/* util */
+.hidden {
+    display: none
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0
+}
+
+.muted {
+    color: var(--muted)
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* ====================================================== */
+/* NEW STYLES: Panel Header & Tab Filters (US-10 & US-16) */
+/* ====================================================== */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    /* Allows wrapping on small screens */
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.panel-header h2 {
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.tab-group {
+    display: flex;
+    gap: 6px;
+    background: #eef2ff;
+    /* Soft "pill" background */
+    border-radius: 10px;
+    padding: 4px;
+    margin-left: auto;
+    /* Pushes to the right in the flex container */
+}
+
+/* Handle wrapping: on small screens, tabs go below header */
+@media (max-width: 600px) {
+    .panel-header {
+        justify-content: center;
+        /* Center items when they wrap */
+    }
+
+    .tab-group {
+        margin-left: 0;
+        /* Remove auto margin */
+        width: 100%;
+        /* Make tabs full width */
+        justify-content: stretch;
+    }
+
+    .tab-btn {
+        flex-grow: 1;
+        /* Make all tabs equal width */
+        text-align: center;
+    }
+}
+
+/* Placeholder for when no image is available */
+/* Placeholder for when no image is available */
+/* Placeholder for when no image is available */
+/* Placeholder for when no image is available */
+.item-no-image {
+    width: 100%;
+    height: 160px;
+    /* Matches the .item-card img height */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    /* FIX: Force content to start at the top of the container */
+    justify-content: flex-start;
+
+    /* Use padding to push the content block down 40px from the top (adjust this value as needed) */
+    padding: 40px 10px 10px;
+    /* Increased top padding for better visual centering */
+
+    background-color: #eef2ff;
+    color: #1e3a8a;
+    text-align: center;
+}
+
+.item-no-image-title-text {
+    font-size: 1.8rem;
+    font-weight: 700;
+
+    /* MODIFIED: Reduce margin to move the badge closer to the title */
+    margin-bottom: 4px;
+
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-no-image-title-text {
+    font-size: 1.8rem;
+    font-weight: 700;
+
+    /* MODIFIED: Reduce margin to move the badge closer to the title */
+    margin-bottom: 4px;
+
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-btn {
+    background: transparent;
+    border: 0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    background: #e0e7ff;
+    /* Slightly darker hover */
+    color: #1e3a8a;
+}
+
+.tab-btn.active {
+    background: #fff;
+    /* Bright white for active state */
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+/* ====================================================== */
+/* END NEW STYLES                                         */
+/* ======================================================
