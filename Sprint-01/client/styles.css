@@ -324,6 +324,21 @@ body.app-root {
     color: #16a34a
 }
 
+.badge-success {
+    background: #d1fae5;
+    color: #059669
+}
+
+.badge-info {
+    background: #dbeafe;
+    color: #2563eb
+}
+
+.badge-warning {
+    background: #fef3c7;
+    color: #d97706
+}
+
 /* report type grid */
 .report-type-grid {
     display: grid;
@@ -685,4 +700,36 @@ body.app-root {
 
 /* ====================================================== */
 /* END NEW STYLES                                         */
-/* ======================================================
+/* ====================================================== */
+
+/* ====================================================== */
+/* Search and Filter Panel Styles                        */
+/* ====================================================== */
+#search-filter-panel h3 {
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-size: 18px;
+}
+
+/* ====================================================== */
+/* Item Owner Actions Styles                             */
+/* ====================================================== */
+#item-owner-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* ====================================================== */
+/* Edit Item View Styles                                 */
+/* ====================================================== */
+#view-edit-item {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* ====================================================== */
+/* Utility Classes                                       */
+/* ====================================================== */
+.hidden {
+    display: none !important;
+}
