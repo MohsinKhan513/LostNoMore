@@ -73,7 +73,7 @@ router.get('/all', async (req, res) => {
   try {
     const items = await Item.find()
       .sort({ createdAt: -1 }) // Newest first
-      .populate('reportedBy', 'name email'); // Join with User, select only name and email
+      .populate('reportedBy', 'name email phone whatsapp'); // Join with User, select contact info
 
     res.json(items);
   } catch (err) {
@@ -104,7 +104,7 @@ router.get('/my-reports', auth, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const item = await Item.findById(req.params.id)
-      .populate('reportedBy', 'name email'); // Get reporter's info
+      .populate('reportedBy', 'name email phone whatsapp'); // Get reporter's contact info
 
     if (!item) {
       return res.status(404).json({ msg: 'Item not found' });
@@ -117,6 +117,202 @@ router.get('/:id', async (req, res) => {
     if (err.kind === 'ObjectId') {
          return res.status(404).json({ msg: 'Item not found' });
     }
+    res.status(500).send('Server Error');
+  }
+});
+
+// --- (US-11, US-17) Update an item ---
+// @route   PUT /api/items/:id
+// This route is protected - only the creator can edit
+router.put('/:id', [auth, upload.single('itemImage')], async (req, res) => {
+  try {
+    const { title, description, category, location, itemType } = req.body;
+    
+    // Find the item first
+    const item = await Item.findById(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    
+    // Check if the user is the owner
+    if (item.reportedBy.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized to edit this item' });
+    }
+    
+    // Build update object with only provided fields
+    const updateData = { updatedAt: Date.now() };
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (category) updateData.category = category;
+    if (location) updateData.location = location;
+    if (itemType) updateData.itemType = itemType;
+    
+    // If a new image was uploaded, update imageUrl
+    if (req.file) {
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+    
+    // Update the item
+    const updatedItem = await Item.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true }
+    );
+    
+    res.json(updatedItem);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    res.status(500).send('Server Error');
+  }
+});
+
+// --- (US-12) Mark item as recovered/returned (US-18) ---
+// @route   PATCH /api/items/:id/status
+// This route is protected - only the creator can update status
+router.patch('/:id/status', auth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    // Validate status
+    if (!status || !['active', 'recovered', 'returned'].includes(status)) {
+      return res.status(400).json({ msg: 'Invalid status. Must be active, recovered, or returned' });
+    }
+    
+    // Find the item first
+    const item = await Item.findById(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    
+    // Check if the user is the owner
+    if (item.reportedBy.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized to update this item' });
+    }
+    
+    // Update status
+    item.status = status;
+    item.updatedAt = Date.now();
+    await item.save();
+    
+    res.json(item);
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    res.status(500).send('Server Error');
+  }
+});
+
+// --- (US-13, US-18) Delete an item ---
+// @route   DELETE /api/items/:id
+// This route is protected - only the creator can delete
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    // Find the item first
+    const item = await Item.findById(req.params.id);
+    
+    if (!item) {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    
+    // Check if the user is the owner
+    if (item.reportedBy.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized to delete this item' });
+    }
+    
+    // Delete the item
+    await Item.findByIdAndDelete(req.params.id);
+    
+    res.json({ msg: 'Item deleted successfully' });
+  } catch (err) {
+    console.error(err.message);
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ msg: 'Item not found' });
+    }
+    res.status(500).send('Server Error');
+  }
+});
+
+// --- (US-19, US-20, US-21, US-22, US-23) Search and filter items ---
+// @route   GET /api/items/search
+// This route supports multiple query parameters for filtering
+router.get('/search/advanced', async (req, res) => {
+  try {
+    const { 
+      keyword,        // US-19: Search by item name/description
+      category,       // US-20: Filter by category
+      location,       // US-21: Filter by location
+      itemType,       // Filter by lost/found
+      status,         // Filter by status
+      dateFrom,       // US-22: Date range - start
+      dateTo,         // US-22: Date range - end
+      sortBy = 'createdAt',  // US-23: Sort field
+      sortOrder = 'desc'     // US-23: Sort order
+    } = req.query;
+    
+    // Build query object
+    const query = {};
+    
+    // Keyword search (US-19)
+    if (keyword) {
+      query.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    
+    // Category filter (US-20)
+    if (category) {
+      query.category = category;
+    }
+    
+    // Location filter (US-21)
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+    
+    // Item type filter
+    if (itemType) {
+      query.itemType = itemType;
+    }
+    
+    // Status filter
+    if (status) {
+      query.status = status;
+    }
+    
+    // Date range filter (US-22)
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) {
+        query.createdAt.$gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        // Add one day to include the entire end date
+        const endDate = new Date(dateTo);
+        endDate.setDate(endDate.getDate() + 1);
+        query.createdAt.$lt = endDate;
+      }
+    }
+    
+    // Build sort object (US-23)
+    const sort = {};
+    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    
+    // Execute query
+    const items = await Item.find(query)
+      .sort(sort)
+      .populate('reportedBy', 'name email phone whatsapp');
+    
+    res.json(items);
+  } catch (err) {
+    console.error(err.message);
     res.status(500).send('Server Error');
   }
 });

@@ -86,10 +86,85 @@
       <div class="panel-header">
         <h2>All Reported Items</h2>
         <div class="header-actions">
+          <button id="toggle-search" class="btn btn-secondary">🔍 Search & Filter</button>
           <button id="refresh-items" class="btn btn-secondary">Refresh</button>
           <button id="btn-new-report" class="btn primary">Report Item</button>
         </div>
       </div>
+      
+      <!-- Search and Filter Panel (US-19, US-20, US-21, US-22, US-23) -->
+      <div id="search-filter-panel" class="card hidden" style="margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">Search & Filter</h3>
+        <form id="search-filter-form" class="form">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <label class="label">
+              Keyword
+              <input id="search-keyword" name="keyword" type="text" class="input" placeholder="Search by name or description...">
+            </label>
+            <label class="label">
+              Category
+              <select id="search-category" name="category" class="input">
+                <option value="">All Categories</option>
+                <option>Electronics</option>
+                <option>Apparel</option>
+                <option>Keys/Cards</option>
+                <option>Books/Notes</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label class="label">
+              Location
+              <input id="search-location" name="location" type="text" class="input" placeholder="Building or area...">
+            </label>
+            <label class="label">
+              Type
+              <select id="search-type" name="itemType" class="input">
+                <option value="">All Types</option>
+                <option value="lost">Lost</option>
+                <option value="found">Found</option>
+              </select>
+            </label>
+            <label class="label">
+              Status
+              <select id="search-status" name="status" class="input">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="recovered">Recovered</option>
+                <option value="returned">Returned</option>
+              </select>
+            </label>
+            <label class="label">
+              From Date
+              <input id="search-date-from" name="dateFrom" type="date" class="input">
+            </label>
+            <label class="label">
+              To Date
+              <input id="search-date-to" name="dateTo" type="date" class="input">
+            </label>
+            <label class="label">
+              Sort By
+              <select id="search-sort" name="sortBy" class="input">
+                <option value="createdAt">Date Posted</option>
+                <option value="title">Item Name</option>
+                <option value="category">Category</option>
+                <option value="location">Location</option>
+              </select>
+            </label>
+            <label class="label">
+              Order
+              <select id="search-order" name="sortOrder" class="input">
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-actions" style="margin-top: 16px;">
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+            <button type="button" id="clear-filters" class="btn btn-secondary">Clear All</button>
+          </div>
+        </form>
+      </div>
+      
       <div id="dashboard-items-container" class="grid cards-grid"></div>
     </section>
 
@@ -180,6 +255,11 @@
     <section id="view-item-details" class="view hidden">
       <div class="panel-header">
         <button id="back-to-dashboard" class="btn btn-secondary">← Back</button>
+        <div id="item-owner-actions" class="header-actions hidden">
+          <button id="edit-item-btn" class="btn btn-secondary">Edit</button>
+          <button id="mark-recovered-btn" class="btn btn-secondary">Mark as Recovered/Returned</button>
+          <button id="delete-item-btn" class="btn danger">Delete</button>
+        </div>
       </div>
       <article class="detail-panel card">
         <div class="detail-media">
@@ -187,6 +267,7 @@
         </div>
         <div class="detail-body">
           <span id="details-type" class="badge"></span>
+          <span id="details-status" class="badge" style="margin-left: 8px;"></span>
           <h2 id="details-title" class="detail-title"></h2>
           <p id="details-description" class="muted"></p>
           <dl class="detail-list">
@@ -211,6 +292,11 @@
             <div>
               <dt>Contact Mobile:</dt>
               <dd id="details-reporter-mobile"></dd>
+            </div>
+
+            <div id="details-whatsapp-row" class="hidden">
+              <dt>WhatsApp:</dt>
+              <dd id="details-reporter-whatsapp"></dd>
             </div>
 
             <div>
@@ -244,19 +330,93 @@
 
         <form id="profile-form" class="form" enctype="multipart/form-data">
           <fieldset class="fieldset">
-            <legend class="legend">Update Profile</legend>
+            <legend class="legend">Update Contact Information (US-06)</legend>
             <label class="label">
               Phone Number
               <input id="profile-phone-input" name="phone" type="tel" required class="input" placeholder="+923001234567"
                 pattern="^\+[1-9]\d{7,14}$" />
             </label>
             <p class="muted small" style="margin-top: -6px;">Current: <span id="profile-phone-display"></span></p>
+            
+            <label class="label">
+              WhatsApp Number (Optional)
+              <input id="profile-whatsapp-input" name="whatsapp" type="tel" class="input" placeholder="+923001234567"
+                pattern="^\+[1-9]\d{7,14}$" />
+            </label>
+            <p class="muted small" style="margin-top: -6px;">Current: <span id="profile-whatsapp-display">Not set</span></p>
           </fieldset>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="submit" class="btn btn-primary">Save Contact Info</button>
+          </div>
+        </form>
+
+        <form id="password-reset-form" class="form" style="margin-top: 24px;">
+          <fieldset class="fieldset">
+            <legend class="legend">Change Password (US-07)</legend>
+            <label class="label">
+              Current Password
+              <input id="current-password" name="currentPassword" type="password" required class="input" placeholder="Enter current password">
+            </label>
+            <label class="label">
+              New Password
+              <input id="new-password" name="newPassword" type="password" required class="input" placeholder="Enter new password" minlength="6">
+            </label>
+            <label class="label">
+              Confirm New Password
+              <input id="confirm-password" name="confirmPassword" type="password" required class="input" placeholder="Confirm new password" minlength="6">
+            </label>
+          </fieldset>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Change Password</button>
           </div>
         </form>
       </div>
+    </section>
+
+    <!-- NEW: Edit Item View Section -->
+    <section id="view-edit-item" class="view card hidden">
+      <div class="auth-header">
+        <h2 class="title" style="text-align: center;">Edit Item Details</h2>
+      </div>
+      <form id="edit-item-form" class="form" enctype="multipart/form-data">
+        <input type="hidden" id="edit-item-id" name="itemId" value="">
+        <fieldset class="fieldset">
+          <label class="label">
+            Item Name
+            <input id="edit-item-title" name="title" type="text" required class="input"
+              placeholder="Black wallet, Blue water bottle...">
+          </label>
+          <label class="label">
+            Description
+            <textarea id="edit-item-description" name="description" rows="3" required class="input"
+              placeholder="Describe marks, contents, brand, where it was last seen..."></textarea>
+          </label>
+          <label class="label">
+            Category
+            <select id="edit-item-category" name="category" required class="input">
+              <option value="">Select a category...</option>
+              <option>Electronics</option>
+              <option>Apparel</option>
+              <option>Keys/Cards</option>
+              <option>Books/Notes</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label class="label">
+            Location
+            <input id="edit-item-location" name="location" type="text" required class="input"
+              placeholder="Library, Cafe, Hill Side...">
+          </label>
+          <label class="label">
+            Upload New Image (optional - leave empty to keep current image)
+            <input id="edit-item-image" name="itemImage" type="file" accept="image/*" class="input-file">
+          </label>
+        </fieldset>
+        <div class="form-actions">
+          <button id="edit-item-cancel" type="button" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
     </section>
 
   </main>

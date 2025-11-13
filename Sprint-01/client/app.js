@@ -22,6 +22,7 @@
         REPORT_DETAILS: '#view-report-details',
         ITEM_DETAILS: '#view-item-details',
         PROFILE: '#view-profile',
+        EDIT_ITEM: '#view-edit-item',
     };
 
     // Elements
@@ -207,6 +208,93 @@
             });
             const data = await safeParseJson(res);
             return { ok: res.ok, status: res.status, data };
+        },
+        
+        resetPassword: async (currentPassword, newPassword) => {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['x-auth-token'] = token;
+            }
+            const res = await fetch(`${API_URL}/auth/reset-password`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ currentPassword, newPassword }),
+            });
+            const data = await safeParseJson(res);
+            return { ok: res.ok, status: res.status, data };
+        },
+        
+        updateItem: async (id, formData) => {
+            const headers = {};
+            const token = getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['x-auth-token'] = token;
+            }
+            const res = await fetch(`${API_URL}/items/${encodeURIComponent(id)}`, {
+                method: 'PUT',
+                headers,
+                body: formData,
+            });
+            const data = await safeParseJson(res);
+            return { ok: res.ok, status: res.status, data };
+        },
+        
+        updateItemStatus: async (id, status) => {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['x-auth-token'] = token;
+            }
+            const res = await fetch(`${API_URL}/items/${encodeURIComponent(id)}/status`, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify({ status }),
+            });
+            const data = await safeParseJson(res);
+            return { ok: res.ok, status: res.status, data };
+        },
+        
+        deleteItem: async (id) => {
+            const headers = {};
+            const token = getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['x-auth-token'] = token;
+            }
+            const res = await fetch(`${API_URL}/items/${encodeURIComponent(id)}`, {
+                method: 'DELETE',
+                headers,
+            });
+            const data = await safeParseJson(res);
+            return { ok: res.ok, status: res.status, data };
+        },
+        
+        searchItems: async (params = {}) => {
+            const headers = {};
+            const token = getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                headers['x-auth-token'] = token;
+            }
+            
+            // Build query string from params
+            const queryParams = new URLSearchParams();
+            Object.keys(params).forEach(key => {
+                if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                    queryParams.append(key, params[key]);
+                }
+            });
+            
+            const queryString = queryParams.toString();
+            const url = queryString ? `${API_URL}/items/search/advanced?${queryString}` : `${API_URL}/items/search/advanced`;
+            
+            const res = await fetch(url, { headers });
+            const data = await safeParseJson(res);
+            return { ok: res.ok, status: res.status, data };
         }
         // ======================================================
     };
@@ -278,30 +366,67 @@
         container.appendChild(frag);
     }
 
+    // ======================================================
+    // NEW: Cache for current item being viewed (for edit/delete)
+    // ======================================================
+    let currentViewedItem = null;
+    // ======================================================
+
     function renderItemDetails(item) {
-        el('details-image').src = item.imageUrl || item.image || ''; // Expects a URL
+        // Store current item for edit/delete operations
+        currentViewedItem = item;
+        
+        el('details-image').src = item.imageUrl || item.image || '';
         el('details-title').textContent = item.title || 'Untitled';
         el('details-description').textContent = item.description || '';
         el('details-category').textContent = item.category || 'N/A';
         el('details-location').textContent = item.location || 'N/A';
 
-
-        // Inside the function renderItemDetails(item) { ... }
-
-        // ...
         const reportedBy = item.reportedBy || {};
         el('details-reporter-name').textContent = (typeof reportedBy === 'object' && reportedBy.name) ? reportedBy.name : (reportedBy || 'Unknown');
         el('details-reporter-email').textContent = (typeof reportedBy === 'object' && reportedBy.email) ? reportedBy.email : (item.contact || 'Not provided');
-
-        // ADD THIS NEW LINE:
-        el('details-reporter-mobile').textContent = (typeof reportedBy === 'object' && reportedBy.mobile) ? reportedBy.mobile : 'Not provided';
+        
+        // Phone number
+        const phone = (typeof reportedBy === 'object' && reportedBy.phone) ? reportedBy.phone : (typeof reportedBy === 'object' && reportedBy.mobile) ? reportedBy.mobile : 'Not provided';
+        el('details-reporter-mobile').textContent = phone;
+        
+        // WhatsApp number
+        const whatsapp = (typeof reportedBy === 'object' && reportedBy.whatsapp) ? reportedBy.whatsapp : null;
+        const whatsappRow = el('details-whatsapp-row');
+        if (whatsapp && whatsapp.trim()) {
+            el('details-reporter-whatsapp').textContent = whatsapp;
+            whatsappRow.classList.remove('hidden');
+        } else {
+            whatsappRow.classList.add('hidden');
+        }
 
         el('details-date').textContent = item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Unknown';
 
         const rawType = (item.itemType || item.type || 'unknown').toLowerCase();
-        const span = el('details-type');
-        span.textContent = rawType.toUpperCase();
-        span.className = 'badge ' + (rawType === 'lost' ? 'type-lost' : 'type-found');
+        const typeSpan = el('details-type');
+        typeSpan.textContent = rawType.toUpperCase();
+        typeSpan.className = 'badge ' + (rawType === 'lost' ? 'type-lost' : 'type-found');
+        
+        // Display status
+        const status = item.status || 'active';
+        const statusSpan = el('details-status');
+        if (status && status !== 'active') {
+            statusSpan.textContent = status.toUpperCase();
+            statusSpan.className = 'badge ' + (status === 'recovered' ? 'badge-success' : 'badge-info');
+            statusSpan.classList.remove('hidden');
+        } else {
+            statusSpan.classList.add('hidden');
+        }
+        
+        // Show edit/delete buttons if user owns this item
+        const ownerActions = el('item-owner-actions');
+        if (currentUser && item.reportedBy && 
+            ((typeof item.reportedBy === 'object' && item.reportedBy._id === currentUser.id) || 
+             (typeof item.reportedBy === 'string' && item.reportedBy === currentUser.id))) {
+            ownerActions.classList.remove('hidden');
+        } else {
+            ownerActions.classList.add('hidden');
+        }
 
         showView(VIEWS.ITEM_DETAILS);
     }
@@ -325,6 +450,8 @@
         el('profile-email').textContent = user.email || 'N/A';
         el('profile-phone-display').textContent = user.phone || 'Not provided';
         el('profile-phone-input').value = user.phone || '';
+        el('profile-whatsapp-display').textContent = user.whatsapp || 'Not set';
+        el('profile-whatsapp-input').value = user.whatsapp || '';
         
         showLoading(false);
         showView(VIEWS.PROFILE);
@@ -492,26 +619,37 @@
     }
 
     // ======================================================
-    // NEW: Handle profile update
+    // NEW: Handle profile update (US-06)
     // ======================================================
     async function handleProfileUpdate(e) {
         e.preventDefault();
         showLoading(true);
         hideMessage();
 
-        const profileFormEl = el('profile-form');
-        const formData = new FormData(profileFormEl);
-
-        // Get the phone number from input
         const newPhone = el('profile-phone-input').value.trim();
+        const newWhatsApp = el('profile-whatsapp-input').value.trim();
 
+        // Validate phone number
         if (!validateE164(newPhone)) {
             showMessage('Phone number must be in international E.164 format, e.g. +923001234567', true);
             showLoading(false);
             return;
         }
 
+        // Validate WhatsApp if provided
+        if (newWhatsApp && !validateE164(newWhatsApp)) {
+            showMessage('WhatsApp number must be in international E.164 format, e.g. +923001234567', true);
+            showLoading(false);
+            return;
+        }
+
+        const formData = new FormData();
         formData.set('phone', newPhone);
+        if (newWhatsApp) {
+            formData.set('whatsapp', newWhatsApp);
+        } else {
+            formData.set('whatsapp', ''); // Clear WhatsApp if empty
+        }
 
         try {
             const res = await api.updateUserProfile(formData);
@@ -701,6 +839,212 @@
     }
     // ======================================================
 
+    // ======================================================
+    // NEW: Password reset handler (US-07)
+    // ======================================================
+    async function handlePasswordReset(e) {
+        e.preventDefault();
+        showLoading(true);
+        hideMessage();
+
+        const currentPassword = el('current-password').value;
+        const newPassword = el('new-password').value;
+        const confirmPassword = el('confirm-password').value;
+
+        if (newPassword !== confirmPassword) {
+            showMessage('New passwords do not match', true);
+            showLoading(false);
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showMessage('New password must be at least 6 characters long', true);
+            showLoading(false);
+            return;
+        }
+
+        try {
+            const res = await api.resetPassword(currentPassword, newPassword);
+            if (res.ok) {
+                showMessage('Password changed successfully', false);
+                el('password-reset-form').reset();
+            } else {
+                showMessage((res.data && (res.data.msg || res.data.error)) || 'Failed to change password', true);
+            }
+        } catch (err) {
+            showMessage('Network error while changing password', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+    // ======================================================
+
+    // ======================================================
+    // NEW: Search and filter handler (US-19, US-20, US-21, US-22, US-23)
+    // ======================================================
+    async function handleSearchFilter(e) {
+        e.preventDefault();
+        showLoading(true);
+        hideMessage();
+
+        const formData = new FormData(el('search-filter-form'));
+        const params = {};
+        
+        for (const [key, value] of formData.entries()) {
+            if (value && value.trim()) {
+                params[key] = value.trim();
+            }
+        }
+
+        try {
+            const res = await api.searchItems(params);
+            if (res.ok) {
+                renderItems(res.data || [], 'dashboard-items-container');
+                showMessage(`Found ${(res.data || []).length} item(s)`, false);
+            } else {
+                showMessage('Failed to search items', true);
+            }
+        } catch (err) {
+            showMessage('Network error while searching', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function toggleSearchPanel() {
+        const panel = el('search-filter-panel');
+        panel.classList.toggle('hidden');
+    }
+
+    function clearFilters() {
+        el('search-filter-form').reset();
+        loadAndShowDashboard();
+    }
+    // ======================================================
+
+    // ======================================================
+    // NEW: Edit item handlers (US-11, US-17)
+    // ======================================================
+    function showEditItemForm() {
+        if (!currentViewedItem) {
+            showMessage('No item selected for editing', true);
+            return;
+        }
+
+        // Pre-fill the edit form
+        el('edit-item-id').value = currentViewedItem._id || currentViewedItem.id;
+        el('edit-item-title').value = currentViewedItem.title || '';
+        el('edit-item-description').value = currentViewedItem.description || '';
+        el('edit-item-category').value = currentViewedItem.category || '';
+        el('edit-item-location').value = currentViewedItem.location || '';
+        
+        showView(VIEWS.EDIT_ITEM);
+    }
+
+    async function handleEditItem(e) {
+        e.preventDefault();
+        showLoading(true);
+        hideMessage();
+
+        const itemId = el('edit-item-id').value;
+        const formEl = el('edit-item-form');
+        const formData = new FormData(formEl);
+
+        try {
+            const res = await api.updateItem(itemId, formData);
+            if (res.ok) {
+                showMessage('Item updated successfully', false);
+                formEl.reset();
+                // Reload and show item details
+                await showItemDetailsById(itemId);
+            } else {
+                showMessage((res.data && (res.data.msg || res.data.error)) || 'Failed to update item', true);
+            }
+        } catch (err) {
+            showMessage('Network error while updating item', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function cancelEditItem() {
+        if (currentViewedItem) {
+            renderItemDetails(currentViewedItem);
+        } else {
+            loadAndShowDashboard();
+        }
+    }
+    // ======================================================
+
+    // ======================================================
+    // NEW: Mark item as recovered/returned handler (US-12)
+    // ======================================================
+    async function handleMarkRecovered() {
+        if (!currentViewedItem) {
+            showMessage('No item selected', true);
+            return;
+        }
+
+        const itemType = currentViewedItem.itemType || 'lost';
+        const statusText = itemType === 'lost' ? 'recovered' : 'returned';
+        
+        if (!confirm(`Mark this item as ${statusText}?`)) {
+            return;
+        }
+
+        showLoading(true);
+        hideMessage();
+
+        try {
+            const res = await api.updateItemStatus(currentViewedItem._id || currentViewedItem.id, statusText);
+            if (res.ok) {
+                showMessage(`Item marked as ${statusText}`, false);
+                // Reload item details
+                await showItemDetailsById(currentViewedItem._id || currentViewedItem.id);
+            } else {
+                showMessage((res.data && (res.data.msg || res.data.error)) || 'Failed to update status', true);
+            }
+        } catch (err) {
+            showMessage('Network error while updating status', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+    // ======================================================
+
+    // ======================================================
+    // NEW: Delete item handler (US-13, US-18)
+    // ======================================================
+    async function handleDeleteItem() {
+        if (!currentViewedItem) {
+            showMessage('No item selected', true);
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
+            return;
+        }
+
+        showLoading(true);
+        hideMessage();
+
+        try {
+            const res = await api.deleteItem(currentViewedItem._id || currentViewedItem.id);
+            if (res.ok) {
+                showMessage('Item deleted successfully', false);
+                currentViewedItem = null;
+                loadAndShowDashboard();
+            } else {
+                showMessage((res.data && (res.data.msg || res.data.error)) || 'Failed to delete item', true);
+            }
+        } catch (err) {
+            showMessage('Network error while deleting item', true);
+        } finally {
+            showLoading(false);
+        }
+    }
+    // ======================================================
+
     // Init wiring
     function init() {
         // Forms
@@ -712,6 +1056,30 @@
         // ======================================================
         el('profile-form').addEventListener('submit', handleProfileUpdate);
         el('profile-picture-input').addEventListener('change', handleProfilePictureChange);
+        el('password-reset-form').addEventListener('submit', handlePasswordReset);
+        // ======================================================
+
+        // ======================================================
+        // NEW: Search and filter event listeners (US-19-23)
+        // ======================================================
+        el('toggle-search').addEventListener('click', (ev) => { ev.preventDefault(); toggleSearchPanel(); });
+        el('search-filter-form').addEventListener('submit', handleSearchFilter);
+        el('clear-filters').addEventListener('click', (ev) => { ev.preventDefault(); clearFilters(); });
+        // ======================================================
+
+        // ======================================================
+        // NEW: Edit item event listeners (US-11, US-17)
+        // ======================================================
+        el('edit-item-btn').addEventListener('click', (ev) => { ev.preventDefault(); showEditItemForm(); });
+        el('edit-item-form').addEventListener('submit', handleEditItem);
+        el('edit-item-cancel').addEventListener('click', (ev) => { ev.preventDefault(); cancelEditItem(); });
+        // ======================================================
+
+        // ======================================================
+        // NEW: Item action event listeners (US-12, US-13, US-18)
+        // ======================================================
+        el('mark-recovered-btn').addEventListener('click', (ev) => { ev.preventDefault(); handleMarkRecovered(); });
+        el('delete-item-btn').addEventListener('click', (ev) => { ev.preventDefault(); handleDeleteItem(); });
         // ======================================================
 
         // report flow

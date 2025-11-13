@@ -132,6 +132,7 @@ router.post('/login', async (req, res) => {
             name: user.name,
             email: user.email,
             phone: user.phone,
+            whatsapp: user.whatsapp,
             profilePicture: user.profilePicture
           }
         });
@@ -163,6 +164,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      whatsapp: user.whatsapp,
       profilePicture: user.profilePicture,
       createdAt: user.createdAt
     });
@@ -181,7 +183,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { phone, profilePicture } = req.body;
+    const { phone, whatsapp, profilePicture } = req.body;
 
     // Prepare update object
     const updateData = {};
@@ -195,8 +197,22 @@ router.put('/profile', authenticateToken, async (req, res) => {
       updateData.phone = phone;
     }
 
+    // Validate and update WhatsApp if provided (US-06)
+    if (whatsapp !== undefined) {
+      if (whatsapp && whatsapp.trim()) {
+        const e164Regex = /^\+[1-9]\d{7,14}$/;
+        if (!e164Regex.test(whatsapp.trim())) {
+          return res.status(400).json({ msg: 'WhatsApp number must be in E.164 format (e.g., +923001234567)' });
+        }
+        updateData.whatsapp = whatsapp;
+      } else {
+        // Allow clearing WhatsApp
+        updateData.whatsapp = null;
+      }
+    }
+
     // Update profile picture if provided
-    if (profilePicture) {
+    if (profilePicture !== undefined) {
       updateData.profilePicture = profilePicture;
     }
 
@@ -223,6 +239,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        whatsapp: user.whatsapp,
         profilePicture: user.profilePicture,
         createdAt: user.createdAt
       }
@@ -233,6 +250,49 @@ router.put('/profile', authenticateToken, async (req, res) => {
   }
 });
 
+// ======================================================
+// NEW: Password reset (US-07)
+// @route   POST /api/auth/reset-password
+// @access  Private (requires authentication)
+// Note: In a production environment, this would typically use email verification
+// For this implementation, we'll allow users to reset their password while logged in
+// ======================================================
+router.post('/reset-password', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ msg: 'Please provide current and new password' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ msg: 'New password must be at least 6 characters long' });
+    }
+
+    // Find user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Current password is incorrect' });
+    }
+
+    // Update password (will be hashed by pre-save hook)
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ msg: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Password reset error:', err.message);
+    res.status(500).json({ msg: 'Server error while resetting password' });
+  }
+});
 // ======================================================
 
 module.exports = router;

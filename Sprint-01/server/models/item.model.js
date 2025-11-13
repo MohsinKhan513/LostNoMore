@@ -31,7 +31,20 @@ const ItemSchema = new mongoose.Schema({
     ref: 'User', // Links this field to the 'User' model
     required: true,
   },
+  // ======================================================
+  // NEW: Status field for tracking item recovery/return (US-12, US-18)
+  // ======================================================
+  status: {
+    type: String,
+    enum: ['active', 'recovered', 'returned'],
+    default: 'active',
+  },
+  // ======================================================
   createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
     type: Date,
     default: Date.now,
   },
