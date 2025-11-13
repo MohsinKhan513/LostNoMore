@@ -193,18 +193,17 @@
             return { ok: res.ok, status: res.status, data };
         },
 
-        updateUserProfile: async (formData) => {
-            const headers = {};
+        updateUserProfile: async (profileData) => {
+            const headers = { 'Content-Type': 'application/json' };
             const token = getToken();
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
                 headers['x-auth-token'] = token;
             }
-            // Don't set Content-Type for multipart
             const res = await fetch(`${API_URL}/auth/profile`, {
                 method: 'PUT',
                 headers,
-                body: formData,
+                body: JSON.stringify(profileData),
             });
             const data = await safeParseJson(res);
             return { ok: res.ok, status: res.status, data };
@@ -635,16 +634,13 @@
             return;
         }
 
-        const formData = new FormData();
-        formData.set('phone', newPhone);
-        if (newWhatsApp) {
-            formData.set('whatsapp', newWhatsApp);
-        } else {
-            formData.set('whatsapp', ''); // Clear WhatsApp if empty
-        }
+        const profileData = {
+            phone: newPhone,
+            whatsapp: newWhatsApp || null
+        };
 
         try {
-            const res = await api.updateUserProfile(formData);
+            const res = await api.updateUserProfile(profileData);
             if (res.ok) {
                 showMessage('Profile updated successfully', false);
                 if (res.data && res.data.user) {
