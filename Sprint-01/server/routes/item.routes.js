@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const auth = require('../middleware/auth.middleware'); // Import auth middleware
+const { modifyLimiter, apiLimiter } = require('../middleware/rate-limit.middleware');
 const Item = require('../models/item.model');
 
 // --- Multer Configuration for Image Uploads ---
@@ -36,7 +37,7 @@ const upload = multer({
 // --- (US-08, 09, 14, 15) Report a new item (Lost or Found) ---
 // @route   POST /api/items/report
 // This route is protected by 'auth' middleware AND uses 'upload' middleware
-router.post('/report', [auth, upload.single('itemImage')], async (req, res) => {
+router.post('/report', [auth, modifyLimiter, upload.single('itemImage')], async (req, res) => {
   const { title, description, category, location, itemType } = req.body;
   
   // Check if file was uploaded
@@ -69,7 +70,7 @@ router.post('/report', [auth, upload.single('itemImage')], async (req, res) => {
 // --- Get all items (for main dashboard) ---
 // @route   GET /api/items/all
 // This route is public (no 'auth' middleware)
-router.get('/all', async (req, res) => {
+router.get('/all', apiLimiter, async (req, res) => {
   try {
     const items = await Item.find()
       .sort({ createdAt: -1 }) // Newest first
@@ -85,7 +86,7 @@ router.get('/all', async (req, res) => {
 // --- (US-10, US-16) Get user's own reported items ---
 // @route   GET /api/items/my-reports
 // This route is protected
-router.get('/my-reports', auth, async (req, res) => {
+router.get('/my-reports', [auth, apiLimiter], async (req, res) => {
   try {
     // Find items where 'reportedBy' matches the logged-in user's ID
     const items = await Item.find({ reportedBy: req.user.id })
@@ -101,7 +102,7 @@ router.get('/my-reports', auth, async (req, res) => {
 // --- (US-24) Get a single item by its ID ---
 // @route   GET /api/items/:id
 // This route is public
-router.get('/:id', async (req, res) => {
+router.get('/:id', apiLimiter, async (req, res) => {
   try {
     const item = await Item.findById(req.params.id)
       .populate('reportedBy', 'name email phone whatsapp'); // Get reporter's contact info
@@ -124,7 +125,7 @@ router.get('/:id', async (req, res) => {
 // --- (US-11, US-17) Update an item ---
 // @route   PUT /api/items/:id
 // This route is protected - only the creator can edit
-router.put('/:id', [auth, upload.single('itemImage')], async (req, res) => {
+router.put('/:id', [auth, modifyLimiter, upload.single('itemImage')], async (req, res) => {
   try {
     const { title, description, category, location, itemType } = req.body;
     
@@ -173,7 +174,7 @@ router.put('/:id', [auth, upload.single('itemImage')], async (req, res) => {
 // --- (US-12) Mark item as recovered/returned (US-18) ---
 // @route   PATCH /api/items/:id/status
 // This route is protected - only the creator can update status
-router.patch('/:id/status', auth, async (req, res) => {
+router.patch('/:id/status', [auth, modifyLimiter], async (req, res) => {
   try {
     const { status } = req.body;
     
@@ -212,7 +213,7 @@ router.patch('/:id/status', auth, async (req, res) => {
 // --- (US-13, US-18) Delete an item ---
 // @route   DELETE /api/items/:id
 // This route is protected - only the creator can delete
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', [auth, modifyLimiter], async (req, res) => {
   try {
     // Find the item first
     const item = await Item.findById(req.params.id);
@@ -242,7 +243,7 @@ router.delete('/:id', auth, async (req, res) => {
 // --- (US-19, US-20, US-21, US-22, US-23) Search and filter items ---
 // @route   GET /api/items/search
 // This route supports multiple query parameters for filtering
-router.get('/search/advanced', async (req, res) => {
+router.get('/search/advanced', apiLimiter, async (req, res) => {
   try {
     const { 
       keyword,        // US-19: Search by item name/description
@@ -259,31 +260,36 @@ router.get('/search/advanced', async (req, res) => {
     // Build query object
     const query = {};
     
-    // Keyword search (US-19)
-    if (keyword) {
+    // Keyword search (US-19) - sanitize input to prevent injection
+    if (keyword && typeof keyword === 'string') {
+      // Escape special regex characters to prevent injection
+      const sanitizedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { title: { $regex: keyword, $options: 'i' } },
-        { description: { $regex: keyword, $options: 'i' } }
+        { title: { $regex: sanitizedKeyword, $options: 'i' } },
+        { description: { $regex: sanitizedKeyword, $options: 'i' } }
       ];
     }
     
-    // Category filter (US-20)
-    if (category) {
+    // Category filter (US-20) - validate against allowed categories
+    const allowedCategories = ['Electronics', 'Apparel', 'Keys/Cards', 'Books/Notes', 'Other'];
+    if (category && typeof category === 'string' && allowedCategories.includes(category)) {
       query.category = category;
     }
     
-    // Location filter (US-21)
-    if (location) {
-      query.location = { $regex: location, $options: 'i' };
+    // Location filter (US-21) - sanitize input
+    if (location && typeof location === 'string') {
+      // Escape special regex characters
+      const sanitizedLocation = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.location = { $regex: sanitizedLocation, $options: 'i' };
     }
     
-    // Item type filter
-    if (itemType) {
+    // Item type filter - validate against enum
+    if (itemType && typeof itemType === 'string' && ['lost', 'found'].includes(itemType)) {
       query.itemType = itemType;
     }
     
-    // Status filter
-    if (status) {
+    // Status filter - validate against enum
+    if (status && typeof status === 'string' && ['active', 'recovered', 'returned'].includes(status)) {
       query.status = status;
     }
     
@@ -291,19 +297,28 @@ router.get('/search/advanced', async (req, res) => {
     if (dateFrom || dateTo) {
       query.createdAt = {};
       if (dateFrom) {
-        query.createdAt.$gte = new Date(dateFrom);
+        const fromDate = new Date(dateFrom);
+        if (!isNaN(fromDate.getTime())) {
+          query.createdAt.$gte = fromDate;
+        }
       }
       if (dateTo) {
-        // Add one day to include the entire end date
-        const endDate = new Date(dateTo);
-        endDate.setDate(endDate.getDate() + 1);
-        query.createdAt.$lt = endDate;
+        const toDate = new Date(dateTo);
+        if (!isNaN(toDate.getTime())) {
+          // Add one day to include the entire end date
+          toDate.setDate(toDate.getDate() + 1);
+          query.createdAt.$lt = toDate;
+        }
       }
     }
     
-    // Build sort object (US-23)
+    // Build sort object (US-23) - validate sortBy field
+    const allowedSortFields = ['createdAt', 'title', 'category', 'location', 'updatedAt'];
+    const validSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const validSortOrder = sortOrder === 'asc' ? 1 : -1;
+    
     const sort = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    sort[validSortBy] = validSortOrder;
     
     // Execute query
     const items = await Item.find(query)

@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const { authLimiter, modifyLimiter, apiLimiter } = require('../middleware/rate-limit.middleware');
 
 // ======================================================
 // NEW: Middleware to authenticate token
@@ -32,7 +33,7 @@ const authenticateToken = (req, res, next) => {
 // --- (US-01, US-03) Register a new user ---
 // @route   POST /api/auth/register
 // MODIFIED: Now includes phone number
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { name, email, password, phone } = req.body;
 
   try {
@@ -90,7 +91,7 @@ router.post('/register', async (req, res) => {
 // --- (US-02, US-04) Login a user ---
 // @route   POST /api/auth/login
 // MODIFIED: Now returns user object along with token
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -150,7 +151,7 @@ router.post('/login', async (req, res) => {
 // @route   GET /api/auth/profile
 // @access  Private (requires authentication)
 // ======================================================
-router.get('/profile', authenticateToken, async (req, res) => {
+router.get('/profile', [authenticateToken, apiLimiter], async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId).select('-password');
@@ -257,7 +258,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 // Note: In a production environment, this would typically use email verification
 // For this implementation, we'll allow users to reset their password while logged in
 // ======================================================
-router.post('/reset-password', authenticateToken, async (req, res) => {
+router.post('/reset-password', [authenticateToken, authLimiter], async (req, res) => {
   try {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
