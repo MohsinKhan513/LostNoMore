@@ -592,16 +592,8 @@
         const reportType = formEl.dataset.reportType || 'lost';
         formData.set('itemType', reportType);
 
-        // ======================================================
-        // MODIFIED: Auto-fill user details from currentUser
-        // No need for manual input since user is already authenticated
-        // ======================================================
-        if (currentUser) {
-            formData.set('contactName', currentUser.name || '');
-            formData.set('contactEmail', currentUser.email || '');
-            formData.set('contactMobile', currentUser.phone || '');
-        }
-        // ======================================================
+        // Contact information is automatically available through the reportedBy user reference
+        // No need to send separately as it's stored in the User model
 
         try {
             const res = await api.reportItem(formData); // Sends the file to the backend

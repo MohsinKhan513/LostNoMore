@@ -90,7 +90,8 @@ router.get('/my-reports', [auth, apiLimiter], async (req, res) => {
   try {
     // Find items where 'reportedBy' matches the logged-in user's ID
     const items = await Item.find({ reportedBy: req.user.id })
-      .sort({ createdAt: -1 }); // Newest first
+      .sort({ createdAt: -1 }) // Newest first
+      .populate('reportedBy', 'name email phone whatsapp'); // Populate user contact info
 
     res.json(items);
   } catch (err) {
